@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI-Based Video Summary Generator</title>
+    {% load static %}
+    <link rel="stylesheet" href="{% static 'css/styles.css' %}">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.4.0/jspdf.umd.min.js"></script>
+    <style>
+        .input-toggle {
+            margin-bottom: 20px;
+        }
+        .form-group {
+            margin-bottom: 15px;
+            display: none;
+        }
+        .form-group.active {
+            display: block;
+        }
+        .toggle-btn {
+            padding: 10px 20px;
+            margin-right: 10px;
+            border: 2px solid #ddd;
+            background: #f5f5f5;
+            cursor: pointer;
+            border-radius: 4px;
+        }
+        .toggle-btn.active {
+            background: #007bff;
+            color: white;
+            border-color: #0056b3;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="container">
+            <h1>Briefly.ai</h1>
+            <nav>
+                <ul>
+                    <li><a href="#home">Home</a></li>
+                    <li><a href="#about">About</a></li>
+                    <li><a href="#contact">Contact</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+    <main class="container">
+        <section id="home">
+            <h2>Upload Your Video or Enter Video URL</h2>
+            <!-- Input method toggle buttons -->
+            <div class="input-toggle">
+                <button type="button" class="toggle-btn active" data-input="file">Upload File</button>
+                <button type="button" class="toggle-btn" data-input="url">Enter URL</button>
+            </div>
+            <!-- Django Form for file upload -->
+            <form id="video-upload-form" method="post" enctype="multipart/form-data">
+                {% csrf_token %}
+                <div class="form-group active" id="file-input">
+                    <label for="video-file">Upload Video File:</label>
+                    {{ form.file }}
+                </div>
+                <div class="form-group" id="url-input">
+                    <label for="video-url">Enter Video URL:</label>
+                    <input type="url" id="video-url" name="video_url" placeholder="https://youtube.com/">
+                </div>
+                <button type="submit">Generate Summary</button>
+            </form>
+        </section>
+        <section id="results">
+            <h2>Summary Results</h2>
+            <div class="summary-output">
+                <p>Your summary will appear here after processing the video.</p>
+            </div>
+            <button id="download-summary" type="button">Download Summary PDF</button>
+        </section>
+    </main>
+    <footer>
+        <p>&copy; 2024 AI Video Summary Generator. All rights reserved.</p>
+    </footer>
+    <script>
+        // Toggle between file upload and URL input
+        const toggleBtns = document.querySelectorAll('.toggle-btn');
+        const fileInput = document.getElementById('file-input');
+        const urlInput = document.getElementById('url-input');
+
+        toggleBtns.forEach(btn => {
+            btn.addEventListener('click', function() {
+                // Remove active class from all buttons
+                toggleBtns.forEach(b => b.classList.remove('active'));
+                // Add active class to clicked button
+                this.classList.add('active');
+
+                // Show/hide appropriate input
+                if (this.dataset.input === 'file') {
+                    fileInput.classList.add('active');
+                    urlInput.classList.remove('active');
+                    // Clear URL input
+                    document.getElementById('video-url').value = '';
+                } else {
+                    urlInput.classList.add('active');
+                    fileInput.classList.remove('active');
+                    // Clear file input
+                    const fileField = document.querySelector('#file-input input[type="file"]');
+                    if (fileField) fileField.value = '';
+                }
+            });
+        });
+
+        // Form submission handling
+        document.getElementById('video-upload-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const activeInput = document.querySelector('.form-group.active');
+            const formData = new FormData(this);
+
+            // Clear unused input from formData
+            if (activeInput.id === 'file-input') {
+                formData.delete('video_url');
+            } else {
+                formData.delete('file');
+            }
+
+            // Handle form submission here
+            console.log('Form submitted with:', activeInput.id);
+        });
+
+        // PDF download functionality
+        document.getElementById("download-summary").addEventListener("click", function() {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            doc.text("Video Summary", 10, 10);
+            doc.text(document.querySelector(".summary-output").innerText, 10, 20);
+            doc.save("summary.pdf");
+        });
+    </script>
+</body>
+</html>
